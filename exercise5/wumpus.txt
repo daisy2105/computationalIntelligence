@@ -1,0 +1,325 @@
+import tkinter as tk
+from tkinter import messagebox
+import random
+
+# ── Constants (from your code) ──────────────────────────────────────────────
+SIZE = 4
+
+DIRECTIONS = {
+    'r': (0,  1),
+    'l': (0, -1),
+    'u': (1,  0),   # visually DOWN
+    'd': (-1, 0),   # visually UP
+}
+ACTIONS = ['r', 'l', 'u', 'd']
+
+
+# ── WumpusWorld class (your original logic) ──────────────────────────────────
+class WumpusWorld:
+    def __init__(self):
+        self.grid = [[[] for _ in range(SIZE)] for _ in range(SIZE)]
+        self.score = 0
+        self.game_over = False
+        self.has_gold = False
+        self.wumpus_alive = True
+        self.agent_pos = [0, 0]
+        self.initialize_game()
+
+    def initialize_game(self):
+        self.grid = [[[] for _ in range(SIZE)] for _ in range(SIZE)]
+        self.place_item('W')
+        self.place_item('G')
+        for _ in range(3):
+            self.place_item('P')
+        self.add_percepts()
+
+    def place_item(self, item):
+        while True:
+            r = random.randint(0, SIZE - 1)
+            c = random.randint(0, SIZE - 1)
+            if (r, c) != tuple(self.agent_pos) and all(
+                i not in self.grid[r][c] for i in ['W', 'G', 'P']
+            ):
+                self.grid[r][c].append(item)
+                break
+
+    def add_percepts(self):
+        for r in range(SIZE):
+            for c in range(SIZE):
+                self.grid[r][c] = [x for x in self.grid[r][c] if x in ['W', 'G', 'P']]
+        for r in range(SIZE):
+            for c in range(SIZE):
+                if 'W' in self.grid[r][c]:
+                    for dr, dc in DIRECTIONS.values():
+                        nr, nc = r + dr, c + dc
+                        if 0 <= nr < SIZE and 0 <= nc < SIZE:
+                            if 'S' not in self.grid[nr][nc]:
+                                self.grid[nr][nc].append('S')
+                if 'P' in self.grid[r][c]:
+                    for dr, dc in DIRECTIONS.values():
+                        nr, nc = r + dr, c + dc
+                        if 0 <= nr < SIZE and 0 <= nc < SIZE:
+                            if 'B' not in self.grid[nr][nc]:
+                                self.grid[nr][nc].append('B')
+
+    def get_percepts(self):
+        r, c = self.agent_pos
+        cell = self.grid[r][c]
+        percepts = []
+        if 'S' in cell: percepts.append('Stench')
+        if 'B' in cell: percepts.append('Breeze')
+        if 'G' in cell: percepts.append('Glitter')
+        if not percepts: percepts.append('None')
+        return percepts
+
+    def move(self, action):
+        if self.game_over:
+            return "Game is over!", -1
+        if action not in ACTIONS:
+            return "Invalid command!", -1
+        dr, dc = DIRECTIONS[action]
+        r, c = self.agent_pos
+        nr, nc = r + dr, c + dc
+        if not (0 <= nr < SIZE and 0 <= nc < SIZE):
+            return "Cannot move outside the grid!", -1
+        self.score -= 1
+        self.agent_pos = [nr, nc]
+        cell = self.grid[nr][nc]
+        if 'P' in cell:
+            self.game_over = True
+            self.score -= 100
+            return "Fell into a pit! Game Over!", -100
+        if 'W' in cell and self.wumpus_alive:
+            self.game_over = True
+            self.score -= 100
+            return "Eaten by Wumpus! Game Over!", -100
+        if 'G' in cell and not self.has_gold:
+            self.has_gold = True
+            self.score += 100
+            self.game_over = True
+            return "You picked up the gold!", 100
+        return "Moved successfully.", 0
+
+
+# ── Tkinter GUI ───────────────────────────────────────────────────────────────
+class WumpusGUI:
+    CELL = 100
+    BG       = "#0d0d1a"
+    CELL_BG  = "#12122a"
+    AGENT_BG = "#1a2a1a"
+    GRID_LINE= "#2a2a55"
+    GOLD     = "#ffd700"
+    TEXT_LT  = "#e0e0ff"
+    TEXT_DIM = "#555577"
+    RED      = "#ff5555"
+    GREEN    = "#55ff99"
+    BLUE     = "#aaddff"
+
+    def __init__(self, root):
+        self.root = root
+        root.title("Wumpus World  4x4")
+        root.configure(bg=self.BG)
+        root.resizable(False, False)
+        self.game = WumpusWorld()
+        self._build_ui()
+        self._bind_keys()
+        self._render()
+        self._log("Game started! Find the Gold. Avoid Wumpus and Pits!", "good")
+
+    def _build_ui(self):
+        # Score bar
+        top = tk.Frame(self.root, bg=self.BG)
+        top.pack(pady=(12, 4))
+        self.lbl_score = tk.Label(top, text="Score: 0", font=("Consolas", 13, "bold"),
+                                  bg=self.BG, fg=self.GOLD)
+        self.lbl_score.pack(side="left", padx=14)
+        self.lbl_pos = tk.Label(top, text="Pos: (1,1)", font=("Consolas", 13),
+                                bg=self.BG, fg=self.TEXT_LT)
+        self.lbl_pos.pack(side="left", padx=14)
+        self.lbl_gold = tk.Label(top, text="Gold: No", font=("Consolas", 13),
+                                 bg=self.BG, fg=self.TEXT_LT)
+        self.lbl_gold.pack(side="left", padx=14)
+
+        # Main area
+        main = tk.Frame(self.root, bg=self.BG)
+        main.pack(padx=14, pady=6)
+
+        canvas_size = SIZE * self.CELL + 2
+        self.canvas = tk.Canvas(main, width=canvas_size, height=canvas_size,
+                                bg=self.CELL_BG, highlightthickness=2,
+                                highlightbackground="#4444aa")
+        self.canvas.pack(side="left", padx=(0, 14))
+
+        side = tk.Frame(main, bg=self.BG, width=230)
+        side.pack(side="left", fill="y")
+        side.pack_propagate(False)
+
+        tk.Label(side, text="PERCEPTS", font=("Consolas", 9, "bold"),
+                 bg=self.BG, fg="#88aaff").pack(anchor="w", pady=(4, 2))
+        self.lbl_percepts = tk.Label(side, text="None", font=("Consolas", 11),
+                                     bg="#111128", fg="#ffee88", justify="left",
+                                     anchor="w", wraplength=210, padx=8, pady=6)
+        self.lbl_percepts.pack(fill="x", pady=(0, 10))
+
+        tk.Label(side, text="LOG", font=("Consolas", 9, "bold"),
+                 bg=self.BG, fg="#88aaff").pack(anchor="w", pady=(4, 2))
+        self.log_text = tk.Text(side, width=27, height=8, font=("Consolas", 10),
+                                bg="#111128", fg="#cccccc", state="disabled",
+                                relief="flat", bd=0, wrap="word")
+        self.log_text.pack(fill="x", pady=(0, 10))
+        self.log_text.tag_config("bad",  foreground=self.RED)
+        self.log_text.tag_config("good", foreground=self.GREEN)
+        self.log_text.tag_config("info", foreground=self.BLUE)
+
+        tk.Label(side, text="LEGEND", font=("Consolas", 9, "bold"),
+                 bg=self.BG, fg="#88aaff").pack(anchor="w", pady=(4, 2))
+        legends = [
+            ("A  = You (Agent)",         self.TEXT_LT),
+            ("W  = Wumpus (hidden)",      "#ff9966"),
+            ("P  = Pit    (hidden)",      "#ff9966"),
+            ("G  = Gold   (find it!)",    self.GOLD),
+            ("S  = Stench -> Wumpus near","#cc88ff"),
+            ("B  = Breeze -> Pit near",   "#88ddff"),
+            ("*  = Glitter -> Gold HERE!",self.GOLD),
+        ]
+        for txt, col in legends:
+            tk.Label(side, text=txt, font=("Consolas", 10), bg=self.BG,
+                     fg=col, anchor="w").pack(fill="x")
+
+        # D-pad buttons
+        btn_frame = tk.Frame(self.root, bg=self.BG)
+        btn_frame.pack(pady=10)
+        bs = dict(font=("Consolas", 16, "bold"), bg="#1e1e44", fg="#aaccff",
+                  activebackground="#2e2e66", activeforeground="white",
+                  relief="raised", bd=3, width=3, cursor="hand2")
+        tk.Button(btn_frame, text="^", command=lambda: self._do_move('d'), **bs)\
+            .grid(row=0, column=1, padx=4, pady=4)
+        tk.Button(btn_frame, text="<", command=lambda: self._do_move('l'), **bs)\
+            .grid(row=1, column=0, padx=4, pady=4)
+        tk.Button(btn_frame, text=">", command=lambda: self._do_move('r'), **bs)\
+            .grid(row=1, column=2, padx=4, pady=4)
+        tk.Button(btn_frame, text="v", command=lambda: self._do_move('u'), **bs)\
+            .grid(row=2, column=1, padx=4, pady=4)
+
+        new_bs = dict(font=("Consolas", 12, "bold"), bg="#2a1a00", fg=self.GOLD,
+                      activebackground=self.GOLD, activeforeground="black",
+                      relief="raised", bd=3, cursor="hand2", padx=14, pady=6)
+        tk.Button(btn_frame, text="New Game", command=self._new_game, **new_bs)\
+            .grid(row=3, column=0, columnspan=3, pady=(10, 0))
+
+        tk.Label(self.root, text="Arrow keys or WASD to move",
+                 font=("Consolas", 9), bg=self.BG, fg=self.TEXT_DIM).pack(pady=(0, 8))
+
+    def _bind_keys(self):
+        key_map = {
+            "Right":"r","Left":"l","Up":"d","Down":"u",
+            "d":"r","a":"l","w":"d","s":"u",
+        }
+        for key, action in key_map.items():
+            self.root.bind(f"<{key}>", lambda e, a=action: self._do_move(a))
+
+    def _do_move(self, action):
+        if self.game.game_over:
+            return
+        msg, reward = self.game.move(action)
+        tag = "bad" if reward < 0 else ("good" if reward > 0 else "info")
+        self._log(msg, tag)
+        self._render()
+        if self.game.game_over:
+            self._show_end(msg)
+
+    def _new_game(self):
+        self.game = WumpusWorld()
+        self._log("New game started!", "good")
+        self._render()
+
+    def _show_end(self, msg):
+        title = "You Win!" if self.game.has_gold else "Game Over!"
+        full  = f"{msg}\n\nFinal Score: {self.game.score}\n\nPlay again?"
+        if messagebox.askyesno(title, full):
+            self._new_game()
+
+    def _render(self):
+        g = self.game
+        ar, ac = g.agent_pos
+        C = self.CELL
+        cv = self.canvas
+        cv.delete("all")
+
+        for row in range(SIZE):
+            for col in range(SIZE):
+                x0 = col * C
+                y0 = (SIZE - 1 - row) * C   # flip vertically
+                x1, y1 = x0 + C, y0 + C
+                cell = g.grid[row][col]
+                is_agent = (row == ar and col == ac)
+
+                bg = self.AGENT_BG if is_agent else self.CELL_BG
+                cv.create_rectangle(x0, y0, x1, y1,
+                                    fill=bg, outline=self.GRID_LINE, width=1)
+
+                # Coordinate label
+                cv.create_text(x0 + 7, y0 + 7,
+                               text=f"{col+1},{SIZE-row}",
+                               anchor="nw", font=("Consolas", 8), fill=self.TEXT_DIM)
+
+                # Main symbol
+                cx, cy = x0 + C//2, y0 + C//2
+                if is_agent:
+                    sym, color = "A", "#55ff99"
+                elif g.game_over and 'W' in cell:
+                    sym, color = "W", "#ff6644"
+                elif g.game_over and 'P' in cell:
+                    sym, color = "P", "#ff4444"
+                elif g.game_over and 'G' in cell and not g.has_gold:
+                    sym, color = "G", self.GOLD
+                else:
+                    sym, color = ".", self.TEXT_DIM
+
+                cv.create_text(cx, cy, text=sym,
+                               font=("Consolas", 36, "bold"), fill=color)
+
+                # Percept icons on agent cell
+                if is_agent:
+                    percepts = g.get_percepts()
+                    icons = []
+                    if 'Stench'  in percepts: icons.append("S")
+                    if 'Breeze'  in percepts: icons.append("B")
+                    if 'Glitter' in percepts: icons.append("*")
+                    if icons:
+                        cv.create_text(x1 - 6, y1 - 6,
+                                       text=" ".join(icons),
+                                       anchor="se", font=("Consolas", 12, "bold"),
+                                       fill="#ffdd55")
+
+        # Score bar
+        r, c = g.agent_pos
+        self.lbl_score.config(text=f"Score: {g.score}")
+        self.lbl_pos.config(text=f"Pos: ({c+1},{SIZE-r})")
+        self.lbl_gold.config(text=f"Gold: {'YES' if g.has_gold else 'No'}")
+
+        # Percepts panel
+        perc_map = {
+            'Stench':  'S = Stench (Wumpus near)',
+            'Breeze':  'B = Breeze (Pit near)',
+            'Glitter': '* = Glitter  GOLD HERE!',
+            'None':    'None'
+        }
+        ptext = "\n".join(perc_map.get(p, p) for p in g.get_percepts())
+        self.lbl_percepts.config(text=ptext)
+
+    def _log(self, msg, tag="info"):
+        self.log_text.config(state="normal")
+        self.log_text.insert("1.0", msg + "\n", tag)
+        lines = int(self.log_text.index("end-1c").split(".")[0])
+        if lines > 40:
+            self.log_text.delete("40.0", "end")
+        self.log_text.config(state="disabled")
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    WumpusGUI(root)
+    root.mainloop()
+
+

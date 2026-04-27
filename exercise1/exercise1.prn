@@ -1,0 +1,519 @@
+Script started on Tue Jan 27 11:29:00 2026
+[23bcs086@mepcolinux exercise1]$cat new.py
+class Graph:
+    def __init__(self):
+        self.nodes = []
+        self.edges = []
+
+    def addNode(self, node):
+        self.nodes.append(node)
+
+    def deleteNode(self, node):
+        self.nodes.remove(node)
+        for i in list(self.edges):
+            if i[0] == node or i[1] == node:
+                self.edges.remove(i)
+
+    def addEdge(self, edge):
+        start, goal, cost = edge
+        self.edges.append([start, goal, int(cost)])
+
+    def deleteEdge(self, edge):
+        for i in list(self.edges):
+            if i[0] == edge[0] and i[1] == edge[1]:
+                self.edges.remove(i)
+
+    def display(self):
+        for i in self.nodes:
+            print(str(i), end=" ")
+            for edge in self.edges:
+                if edge[0] == i:
+                    print(f"{edge[1]} (cost={edge[2]})", end=" ")
+            print()
+
+    # ---------------- BFS ----------------
+    def bfs(self, start, goal):
+        visited = []
+        fringe = [start]
+        print("Initial fringe:", fringe)
+
+        while fringe:
+            curr = fringe.pop(0)
+            print(curr)
+            if curr == goal:
+                print("Goal node found!")
+                print("Visited nodes:", visited + [curr])
+                return
+            if curr not in visited:
+                visited.append(curr)
+                for edge in self.edges:
+                    if edge[0] == curr and edge[1] not in visited and edge[1] not in fringe:
+                        fringe.append(edge[1])
+            print("Fringe after processing node", curr, ":", fringe)
+
+        print("Goal node NOT found!")
+        print("Visited nodes:", visited)
+
+    # ---------------- DFS ----------------
+    def dfs(self, start, goal):
+        visited = []
+        stack = [start]
+        fringe = [start]
+        print("Initial fringe:", fringe)
+
+        while stack:
+            current = stack.pop()
+            print(current)
+            if current == goal:
+                print("Goal node found!")
+                print("Visited nodes:", visited + [current])
+                return
+            if current not in visited:
+                visited.append(current)
+                children = [edge[1] for edge in self.edges
+                            if edge[0] == current and edge[1] not in visited and edge[1] not in stack]
+                for child in reversed(children):
+                    stack.append(child)
+                    fringe.append(child)
+            print("Fringe after processing node", current, ":", fringe)
+
+        print("Goal node NOT found!")
+        print("Visited nodes:", visited)
+
+    # ---------------- UCS ----------------
+    def ucs(self, start, goal):
+        visited = []
+        queue = [(start, 0, [start])]
+        fringe = [start]
+        print("Initial fringe:", fringe)
+
+        while queue:
+            # find node with minimum cost
+            min_index = 0
+            for i in range(len(queue)):
+                if queue[i][1] < queue[min_index][1]:
+                    min_index = i
+            current, cost, path = queue.pop(min_index)
+            print(current)
+            if current == goal:
+                print("Goal node found!")
+                print("Visited nodes:", visited + [current])
+                print("Final path:", path)
+                print("Total cost:", cost)
+                return
+            if current not in visited:
+                visited.append(current)
+                for edge in self.edges:
+                    if edge[0] == current and edge[1] not in visited:
+                        queue.append((edge[1], cost + edge[2], path + [edge[1]]))
+                        fringe.append(edge[1])
+            # show fringe like BFS/DFS (nodes only)
+            print("Fringe after processing node", current, ":", fringe)
+
+        print("Goal node NOT found!")
+        print("Visited nodes:", visited)
+
+
+# ---------------- Menu-driven program ----------------
+if __name__ == '__main__':
+    graph = Graph()
+    print("1.addnode\n2.deletenode\n3.addedge\n4.deleteedge\n5.display\n6.bfs\n7.dfs\n8.ucs\n")
+    while True:
+        n = int(input("Enter choice: "))
+        if n == 1:
+            node = input("Enter node to insert: ")
+            graph.addNode(node)
+        elif n == 2:
+            node = input("Enter node to delete: ")
+            graph.deleteNode(node)
+        elif n == 3:
+            start = input("Enter start node: ")
+            goal = input("Enter goal node: ")
+            cost = input("Enter cost: ")
+            graph.addEdge([start, goal, cost])
+        elif n == 4:
+            start = input("Enter start node: ")
+            goal = input("Enter the goal node: ")
+            graph.deleteEdge([start, goal])
+        elif n == 5:
+            graph.display()
+        elif n == 6:
+            start = input("Enter start node: ")
+            goal = input("Enter goal node: ")
+            graph.bfs(start, goal)
+        elif n == 7:
+            start = input("Enter start node: ")
+            goal = input("Enter goal node: ")
+            graph.dfs(start, goal)
+        elif n == 8:
+            start =input("Enter start node: ")
+            goal = input("Enter goal node: ")
+            graph.ucs(start, goal)
+
+
+[23bcs086@mepcolinux exercise1]$python3 new.py
+1.addnode
+2.deletenode
+3.addedge
+4.deleteedge
+5.display
+6.bfs
+7.dfs
+8.ucs
+
+Enter choice: 1
+Enter node to insert: main
+Enter choice: 1
+Enter node to insert: aj
+Enter choice: 1
+Enter node to insert: mcc
+Enter choice: 1
+Enter node to insert: civil
+Enter choice: 1
+Enter node to insert: eee
+Enter choice: 1
+Enter node to insert: lib
+Enter choice: 1
+Enter node to insert: cse
+Enter choice: 1
+Enter node to insert: aids
+Enter choice: 1
+Enter node to insert: mech
+Enter choice: 1
+Enter node to insert: ece
+Enter choice: 1
+Enter node to insert: canteen
+Enter choice: 1
+Enter node to insert: sh
+Enter choice: 1
+Enter node to insert: arch
+Enter choice: 1
+Enter node to insert: biotech
+Enter choice: 1
+Enter node to insert: mba
+Enter choice: 3
+Enter start node: main
+Enter goal node: aj
+Enter cost: 1
+Enter choice: 3
+Enter start node: main
+Enter goal node: mcc
+Enter cost: 1
+Enter choice: 3
+Enter start node: aj
+Enter goal node: sh
+Enter cost: 1
+Enter choice: 3
+Enter start node: aj
+Enter goal node: civil
+Enter cost: 1
+Enter choice: 3
+Enter start node: mcc
+Enter goal node: lib
+Enter cost: 1
+Enter choice: 3
+Enter start node: lib
+Enter goal node: cse
+Enter cost: 1
+Enter choice: 3
+Enter start node: civil
+Enter goal node: eee
+Enter cost: 1
+Enter choice: 3
+Enter start node: sh
+Enter goal node: canteen
+Enter cost: 1
+Enter choice: 3
+Enter start node: eee
+Enter goal node: canteen
+Enter cost: 1
+Enter choice: 3
+Enter start node: eee
+Enter goal node: ece
+Enter cost: 1
+Enter choice: 3
+Enter start node: cse
+Enter goal node: aids
+Enter cost: 1
+Enter choice: 3
+Enter start node: cse
+Enter goal node: mech
+Enter cost: 1
+Enter choice: 3
+Enter start node: cse
+Enter goal node: ece
+Enter cost: 1
+Enter choice: 3
+Enter start node: canteen
+Enter goal node: arch
+Enter cost: 1
+Enter choice: 3
+Enter start node: arch
+Enter goal node: biotech
+Enter cost: 1
+Enter choice: 3
+Enter start node: biotech
+Enter goal node: mba
+Enter cost: 1
+Enter choice: 5
+main aj (cost=1) mcc (cost=1) 
+aj sh (cost=1) civil (cost=1) 
+mcc lib (cost=1) 
+civil eee (cost=1) 
+eee canteen (cost=1) ece (cost=1) 
+lib cse (cost=1) 
+cse aids (cost=1) mech (cost=1) ece (cost=1) 
+aids 
+mech 
+ece 
+canteen arch (cost=1) 
+sh canteen (cost=1) 
+arch biotech (cost=1) 
+biotech mba (cost=1) 
+mba 
+Enter choice: 6
+Enter start node: main
+Enter goal node: biotech
+Initial fringe: ['main']
+main
+Fringe after processing node main : ['aj', 'mcc']
+aj
+Fringe after processing node aj : ['mcc', 'sh', 'civil']
+mcc
+Fringe after processing node mcc : ['sh', 'civil', 'lib']
+sh
+Fringe after processing node sh : ['civil', 'lib', 'canteen']
+civil
+Fringe after processing node civil : ['lib', 'canteen', 'eee']
+lib
+Fringe after processing node lib : ['canteen', 'eee', 'cse']
+canteen
+Fringe after processing node canteen : ['eee', 'cse', 'arch']
+eee
+Fringe after processing node eee : ['cse', 'arch', 'ece']
+cse
+Fringe after processing node cse : ['arch', 'ece', 'aids', 'mech']
+arch
+Fringe after processing node arch : ['ece', 'aids', 'mech', 'biotech']
+ece
+Fringe after processing node ece : ['aids', 'mech', 'biotech']
+aids
+Fringe after processing node aids : ['mech', 'biotech']
+mech
+Fringe after processing node mech : ['biotech']
+biotech
+Goal node found!
+Visited nodes: ['main', 'aj', 'mcc', 'sh', 'civil', 'lib', 'canteen', 'eee', 'cse', 'arch', 'ece', 'aids', 'mech', 'biotech']
+[23bcs086@mepcolinux exercise1]$python3 new.py
+1.addnode
+2.deletenode
+3.addedge
+4.deleteedge
+5.display
+6.bfs
+7.dfs
+8.ucs
+
+Enter choice: 1
+Enter node to insert: a
+Enter choice: 1
+Enter node to insert: b
+Enter choice: 1
+Enter node to insert: c
+Enter choice: 1
+Enter node to insert: d
+Enter choice: 1
+Enter node to insert: e
+Enter choice: 1
+Enter node to insert: f
+Enter choice: 1
+Enter node to insert: g
+Enter choice: 1
+Enter node to insert: h
+Enter choice: 1
+Enter node to insert: i
+Enter choice: 1
+Enter node to insert: l
+Enter choice: 1
+Enter node to insert: m
+Enter choice: 3
+Enter start node: a
+Enter goal node: b
+Enter cost: 1
+Enter choice: 3
+Enter start node: b
+Enter goal node: c
+Enter cost: 1
+Enter choice: 3
+Enter start node: b
+Enter goal node: h
+Enter cost: 1
+Enter choice: 3
+Enter start node: c
+Enter goal node: d
+Enter cost: 1
+Enter choice: 3
+Enter start node: d
+Enter goal node: e
+Enter cost: 1
+Enter choice: 3
+Enter start node: d
+Enter goal node: g
+Enter cost: 1
+Enter choice: 3
+Enter start node: e
+Enter goal node: f
+Enter cost: 1
+Enter choice: 3
+Enter start node: h
+Enter goal node: i
+Enter cost: 1
+Enter choice: 3
+Enter start node: h
+Enter goal node: j
+Enter cost: 1
+Enter choice: 3
+Enter start node: h
+Enter goal node: m
+Enter cost: 1
+Enter choice: 3
+Enter start node: j
+Enter goal node: k
+Enter cost: 1
+Enter choice: 3
+Enter start node: k
+Enter goal node: l
+Enter cost: 1
+Enter choice: 1
+Enter node to insert: j
+Enter choice: 1
+Enter node to insert: k
+Enter choice: 5
+a b (cost=1) 
+b c (cost=1) h (cost=1) 
+c d (cost=1) 
+d e (cost=1) g (cost=1) 
+e f (cost=1) 
+f 
+g 
+h i (cost=1) j (cost=1) m (cost=1) 
+i 
+l 
+m 
+j k (cost=1) 
+k l (cost=1) 
+Enter choice: 7
+Enter start node: a
+Enter goal node: l
+Initial fringe: ['a']
+a
+Fringe after processing node a : ['a', 'b']
+b
+Fringe after processing node b : ['a', 'b', 'h', 'c']
+c
+Fringe after processing node c : ['a', 'b', 'h', 'c', 'd']
+d
+Fringe after processing node d : ['a', 'b', 'h', 'c', 'd', 'g', 'e']
+e
+Fringe after processing node e : ['a', 'b', 'h', 'c', 'd', 'g', 'e', 'f']
+f
+Fringe after processing node f : ['a', 'b', 'h', 'c', 'd', 'g', 'e', 'f']
+g
+Fringe after processing node g : ['a', 'b', 'h', 'c', 'd', 'g', 'e', 'f']
+h
+Fringe after processing node h : ['a', 'b', 'h', 'c', 'd', 'g', 'e', 'f', 'm', 'j', 'i']
+i
+Fringe after processing node i : ['a', 'b', 'h', 'c', 'd', 'g', 'e', 'f', 'm', 'j', 'i']
+j
+Fringe after processing node j : ['a', 'b', 'h', 'c', 'd', 'g', 'e', 'f', 'm', 'j', 'i', 'k']
+k
+Fringe after processing node k : ['a', 'b', 'h', 'c', 'd', 'g', 'e', 'f', 'm', 'j', 'i', 'k', 'l']
+l
+Goal node found!
+Visited nodes: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l']
+[23bcs086@mepcolinux exercise1]$python3 new.py
+1.addnode
+2.deletenode
+3.addedge
+4.deleteedge
+5.display
+6.bfs
+7.dfs
+8.ucs
+
+Enter choice: 1
+Enter node to insert: chennai
+Enter choice: 1
+Enter node to insert: bangalore
+Enter choice: 1
+Enter node to insert: hyderabad
+Enter choice: 1
+Enter node to insert: mumbai
+Enter choice: 1
+Enter node to insert: delhi
+Enter choice: 3
+Enter start node: chennai
+Enter goal node: bangalore
+Enter cost: 3000
+Enter choice: 3
+Enter start node: chennai
+Enter goal node: hyderabad
+Enter cost: 6000
+Enter choice: 3
+Enter start node: bangalore
+Enter goal node: mumbai
+Enter cost: 4000
+Enter choice: 3
+Enter start node: hyderabad 
+Enter goal node: mumbai
+Enter cost: 2000
+Enter choice: 3
+Enter start node: mumbai
+Enter goal node: delhi
+Enter cost: 5000
+Enter choice: 3
+Enter start node: hyderabad
+Enter goal node: delhi
+Enter cost: 9000
+Enter choice: 5
+chennai bangalore (cost=3000) hyderabad (cost=6000) 
+bangalore mumbai (cost=4000) 
+hyderabad delhi (cost=9000) 
+mumbai delhi (cost=5000) 
+delhi 
+Enter choice: 3
+Enter start node: hyderabad
+Enter goal node: mumbai
+Enter cost: 2000
+Enter choice: 5
+chennai bangalore (cost=3000) hyderabad (cost=6000) 
+bangalore mumbai (cost=4000) 
+hyderabad delhi (cost=9000) mumbai (cost=2000) 
+mumbai delhi (cost=5000) 
+delhi 
+Enter choice: 8
+Enter start node: chennai
+Enter goal node: delhi
+Initial fringe: ['chennai']
+chennai
+Fringe after processing node chennai : ['chennai', 'bangalore', 'hyderabad']
+bangalore
+Fringe after processing node bangalore : ['chennai', 'bangalore', 'hyderabad', 'mumbai']
+hyderabad
+Fringe after processing node hyderabad : ['chennai', 'bangalore', 'hyderabad', 'mumbai', 'delhi', 'mumbai']
+mumbai
+Fringe after processing node mumbai : ['chennai', 'bangalore', 'hyderabad', 'mumbai', 'delhi', 'mumbai', 'delhi']
+mumbai
+Fringe after processing node mumbai : ['chennai', 'bangalore', 'hyderabad', 'mumbai', 'delhi', 'mumbai', 'delhi']
+delhi
+Goal node found!
+Visited nodes: ['chennai', 'bangalore', 'hyderabad', 'mumbai', 'delhi']
+Final path: ['chennai', 'bangalore', 'mumbai', 'delhi']
+Total cost: 12000
+[23bcs086@mepcolinux exercise1]$exit
+exit
+There are stopped jobs.
+[23bcs086@mepcolinux exercise1]$exit
+exit
+
+Script done on Tue Jan 27 11:43:36 2026

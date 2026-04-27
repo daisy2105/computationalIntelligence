@@ -1,0 +1,17 @@
+Age,Gender,BP,Cholesterol,Drug
+Young,F,High,Normal,B
+Young,F,High,High,A
+Middle-age,F,Normal,Normal,B
+Middle-age,F,Normal,Normal,B
+Senior,M,Low,Normal,B
+Senior,M,Low,High,B
+Middle-age,M,Low,High,B
+Young,F,Normal,Normal,A
+Young,M,Low,Normal,B
+Senior,M,Normal,Normal,B
+Young,M,Normal,High,B
+Middle-age,F,Normal,High,B
+Middle-age,M,High,Normal,A
+Middle-age,F,Normal,Normal,A
+
+

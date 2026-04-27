@@ -1,0 +1,77 @@
+Script started on Sat Apr 25 15:23:21 2026
+[23bcs086@mepcolinux ex10]$cat all.lisp
+;; ===== CIRCLE AREA =====
+(defun circle-area (radius)
+  (* pi radius radius))
+
+(defun run-circle ()
+  (format t "Enter radius: ")
+  (let* ((r (read))
+         (area (circle-area r)))
+    (format t "Radius : ~a~%" r)
+    (format t "Area   : ~,4f~%" area)))
+
+
+;; ===== FIBONACCI =====
+(defun fibonacci (n)
+  (cond
+    ((= n 0) 0)
+    ((= n 1) 1)
+    (t (+ (fibonacci (- n 1))
+          (fibonacci (- n 2))))))
+
+(defun print-fibonacci (count)
+  (dotimes (i count)
+    (format t "~a " (fibonacci i)))
+  (format t "~%"))
+
+(defun run-fibonacci ()
+  (format t "Enter count: ")
+  (let ((n (read)))
+    (format t "Fibonacci series: ")
+    (print-fibonacci n)))
+
+
+;; ===== PALINDROME =====
+(defun string-reverse (s)
+  (let* ((len (length s))
+         (result (make-string len)))
+    (dotimes (i len)
+      (setf (char result i)
+            (char s (- len 1 i))))
+    result))
+
+(defun palindrome-p (s)
+  (string= s (string-reverse s)))
+
+(defun run-palindrome ()
+  (format t "Enter a word: ")
+  (let* ((input (string (read)))
+         (result (palindrome-p input)))
+    (if result
+      (format t "~a is a palindrome!~%" input)
+      (format t "~a is NOT a palindrome.~%" input))))
+[23bcs086@mepcolinux ex10]$cat output.txt
+CL-USER 1 > (run-circle)
+Enter radius: 5
+Area : 78.5398
+NIL
+
+CL-USER 2 > (run-palindrome)
+Enter a word: madam
+MADAM is a palindrome!
+NIL
+
+CL-USER 3 > (run-palindrome)
+Enter a word: hello
+HELLO is NOT a palindrome.
+NIL
+
+CL-USER 4 > (run-fibonacci)
+Enter count: 8
+Fibonacci series: 0 1 1 2 3 5 8 13
+NIL
+[23bcs086@mepcolinux ex10]$exit
+exit
+
+Script done on Sat Apr 25 15:25:20 2026

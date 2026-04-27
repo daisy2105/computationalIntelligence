@@ -1,0 +1,285 @@
+CALCULATOR.
+
+% Main rule to run the calculator
+calculate :-
+    write('enter number 1: '), read(X),
+    write('enter number 2: '), read(Y),
+    write('enter operation: '), read(Op),
+    perform_op(X, Y, Op).
+
+% Predicates for each operation
+perform_op(X, Y, +) :- Result is X + Y, print_res(Result).
+perform_op(X, Y, -) :- Result is X - Y, print_res(Result).
+perform_op(X, Y, *) :- Result is X * Y, print_res(Result).
+perform_op(X, Y, /) :-
+    (Y \= 0 ->
+        Result is X / Y, print_res(Result) ;
+        write('Error: Division by zero'), nl).
+
+% Helper to print the result
+print_res(R) :-
+    write('Result: '), write(R), nl.
+-------------------------------------
+output
+
+?- calculate.
+enter number 1: 10.
+enter number 2: |: 11.
+enter operation: |: +
+|: .
+Result: 21
+true .
+
+?- calculate.
+enter number 1: 5.
+enter number 2: |: 6.
+enter operation: |: *
+|: .
+Result: 30
+true .
+-------------------------------------
+2.MAHABHARATA
+
+% ==========================================
+% MAHABHARATA KNOWLEDGE BASE
+% ==========================================
+
+% --- Gender Facts ---
+male(shantanu). male(vichitravirya). male(bheeshma). male(vyasa).
+male(dhritarashtra). male(pandu). male(yudhishtra). male(bheema).
+male(arjuna). male(nakula). male(sahadeva). male(duryodhana).
+male(dushasana). male(abhimanyu). male(parikshit).
+
+female(ganga). female(satyavati). female(ambika). female(ambalika).
+female(gandhari). female(kunti). female(madri).
+female(subhadra). female(draupadi). female(uttara).
+
+% --- Parenthood Facts ---
+parent(shantanu, bheeshma). parent(ganga, bheeshma).
+parent(shantanu, vichitravirya). parent(satyavati, vichitravirya).
+parent(vichitravirya, dhritarashtra). parent(ambika, dhritarashtra).
+parent(vichitravirya, pandu). parent(ambalika, pandu).
+parent(dhritarashtra, duryodhana). parent(gandhari, duryodhana).
+parent(dhritarashtra, dushasana). parent(gandhari, dushasana).
+parent(pandu, yudhishtra). parent(kunti, yudhishtra).
+parent(pandu, arjuna). parent(kunti, arjuna).
+parent(arjuna, abhimanyu). parent(subhadra, abhimanyu).
+parent(abhimanyu, parikshit). parent(uttara, parikshit).
+
+% --- Marriage Facts ---
+married(shantanu, ganga). married(shantanu, satyavati).
+married(dhritarashtra, gandhari). married(pandu, kunti).
+married(pandu, madri). married(arjuna, subhadra).
+married(arjuna, draupadi). married(abhimanyu, uttara).
+
+% ==========================================
+% RELATIONSHIP RULES
+% ==========================================
+
+% 1. Basic Parents & Children
+father(F, C) :- male(F), parent(F, C).
+mother(M, C) :- female(M), parent(M, C).
+son(S, P) :- male(S), parent(P, S).
+daughter(D, P) :- female(D), parent(P, D).
+
+% 2. Spouses
+wife(W, H) :- female(W), (married(H, W) ; married(W, H)).
+husband(H, W) :- male(H), (married(H, W) ; married(W, H)).
+
+% 3. Siblings
+sibling(X, Y) :- parent(P, X), parent(P, Y), X \= Y.
+brother(B, X) :- male(B), sibling(B, X).
+sister(S, X) :- female(S), sibling(S, X).
+
+% 4. Grandparents
+grandfather(GF, GC) :- male(GF), parent(GF, X), parent(X, GC).
+grandmother(GM, GC) :- female(GM), parent(GM, X), parent(X, GC).
+
+% 5. Uncles and Aunts
+uncle(U, N) :- male(U), parent(P, N), sibling(U, P).
+uncle(U, N) :- male(U), parent(P, N), sister(S, P), husband(U, S).
+
+aunt(A, N) :- female(A), parent(P, N), sibling(A, P).
+aunt(A, N) :- female(A), parent(P, N), brother(B, P), wife(A, B).
+
+% 6. In-Laws
+father_in_law(FIL, X) :- male(FIL), (wife(X, S) ; husband(X, S)), father(FIL, S).
+mother_in_law(MIL, X) :- female(MIL), (wife(X, S) ; husband(X, S)), mother(MIL, S).
+
+brother_in_law(BIL, X) :- male(BIL), (wife(X, S) ; husband(X, S)), brother(BIL, S).
+brother_in_law(BIL, X) :- male(BIL), sister(S, X), husband(BIL, S).
+
+sister_in_law(SIL, X) :- female(SIL), (wife(X, S) ; husband(X, S)), sister(SIL, S).
+sister_in_law(SIL, X) :- female(SIL), brother(B, X), wife(SIL, B).
+-------------------------------------
+output
+
+?- father(X,arjuna).
+X = pandu .
+
+?- mother(M,bheeshma).
+M = ganga .
+
+?- husband(H,subhadra).
+H = arjuna .
+
+?- mother_in_law(ML,uttara).
+ML = subhadra .
+
+?- brother(B,arjuna).
+B = yudhishtra .
+
+?- wife(X,bheema).
+false.
+
+?- wife(W,bheema).
+false.
+
+?- wife(W,arjuna).
+W = subhadra .
+-------------------------------------
+
+3.SHOPPING CART.
+
+% --- Declare dynamic predicates ---
+:- dynamic cart_item/3.
+
+% 1. ENTRY POINT
+start :-
+    nl, write('--- Online Shopping System ---'), nl,
+    write('1. Add Item to Stock'), nl,
+    write('2. Display Cart (Stock)'), nl,
+    write('3. Order Specific Item'), nl,
+    write('4. Clear Cart'), nl,
+    write('5. Exit'), nl,
+    main_loop.
+
+% 2. THE RECURSIVE LOOP
+main_loop :-
+    nl, write('Enter choice (1-5): '), read(Choice),
+    handle_choice(Choice).
+
+% 3. HANDLE USER CHOICES
+handle_choice(1) :-
+    write('Enter Product Name: '), read(Name),
+    write('Enter Price: '), read(Price),
+    write('Enter Quantity: '), read(Qty),
+    add_item(Name, Price, Qty),
+    main_loop.
+
+handle_choice(2) :-
+    show_cart,
+    main_loop.
+
+handle_choice(3) :-
+    order_specific_item,
+    main_loop.
+
+handle_choice(4) :-
+    clear_cart,
+    main_loop.
+
+handle_choice(5) :-
+    write('Exiting... Goodbye!'), nl.
+
+handle_choice(_) :-
+    write('Invalid choice, try again.'), nl,
+    main_loop.
+
+% 4. ADD ITEM LOGIC
+add_item(Name, Price, Qty) :-
+    (cart_item(Name, Price, OldQty) ->
+        NewQty is OldQty + Qty,
+        retract(cart_item(Name, Price, OldQty)),
+        assertz(cart_item(Name, Price, NewQty)),
+        format('Updated ~w: Total stock is ~w.~n', [Name, NewQty])
+    ;
+        assertz(cart_item(Name, Price, Qty)),
+        format('Added ~w to the stock.~n', [Name])
+    ).
+
+% 5. DISPLAY ITEMS
+show_cart :-
+    nl, write('--- Current Stock in Cart ---'), nl,
+    (   cart_item(_, _, _)
+    ->  forall(cart_item(N, P, Q),
+               format('Product: ~w | Price: Rs.~2f | Available Qty: ~d~n', [N, P, Q]))
+    ;   write('The cart is empty.'), nl
+    ).
+
+% 6. ORDER SPECIFIC ITEM (User Input with Validation)
+order_specific_item :-
+    write('Enter item to order: '), read(ItemName),
+    (   cart_item(ItemName, Price, AvailableQty)
+    ->  write('Enter quantity: '), read(OrderQty),
+        (   OrderQty =< AvailableQty
+        ->  TotalBill is Price * OrderQty,
+            format('Order placed! Item: ~w | Qty: ~d | Total Bill: Rs.~2f~n', [ItemName, OrderQty, TotalBill]),
+            % Optional: Reduce stock after order
+            NewStock is AvailableQty - OrderQty,
+            retract(cart_item(ItemName, Price, AvailableQty)),
+            (NewStock > 0 -> assertz(cart_item(ItemName, Price, NewStock)) ; true)
+        ;   write('false. (Insufficient quantity in cart)'), nl
+        )
+    ;   write('false. (Item not present in cart)'), nl
+    ).
+
+% 7. CLEAR CART
+clear_cart :-
+    retractall(cart_item(_, _, _)),
+    write('Cart has been emptied.'), nl.
+-------------------------------------
+
+output
+
+--- Online Shopping System ---
+1. Add Item to Stock
+2. Display Cart (Stock)
+3. Order Specific Item
+4. Clear Cart
+5. Exit
+
+Enter choice (1-5): |: 1
+|: .
+Enter Product Name: |: pen.
+Enter Price: |: 10.
+Enter Quantity: |: 5.
+Added pen to the stock.
+
+Enter choice (1-5): |: 1.
+Enter Product Name: |: sugar.
+Enter Price: |: 30.
+Enter Quantity: |: 4.
+Added sugar to the stock.
+
+Enter choice (1-5): |: 2.
+
+--- Current Stock in Cart ---
+Product: oil | Price: Rs.20.00 | Available Qty: 3
+Product: pen | Price: Rs.10.00 | Available Qty: 5
+Product: sugar | Price: Rs.30.00 | Available Qty: 4
+
+Enter choice (1-5): |: 3.
+Enter item to order: |: pencil.
+false. (Item not present in cart)
+
+Enter choice (1-5): |: 3.
+Enter item to order: |: oil.
+Enter quantity: |: 4.
+false. (Insufficient quantity in cart)
+
+Enter choice (1-5): |: 3.
+Enter item to order: |: pen.
+Enter quantity: |: 2
+|: .
+Order placed! Item: pen | Qty: 2 | Total Bill: Rs.20.00
+
+Enter choice (1-5): |: 4.
+Cart has been emptied.
+
+Enter choice (1-5): |: 5.
+Exiting... Goodbye!
+true .
+
+
+

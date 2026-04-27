@@ -1,0 +1,308 @@
+Script started on Tue Feb 17 09:51:57 2026
+[23bcs086@mepcolinux exercise3]$cat knn4.py
+import csv
+import math
+import random
+
+def distance(a, b, r):
+    return sum(abs(x - y) ** r for x, y in zip(a, b)) ** (1 / r)
+
+def load(filename):
+    data = []
+    with open(filename, 'r') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if row:
+                # Assuming class label is in column 2 and features from columns 3-6
+                # Adjusting for 0-based indexing: class label is index 1, features are indices 2-5
+                features = list(map(float, row[2:6])) # Extract features from column 3 to 6
+                label = row[1] # Class label is in column 2
+                data.append((features, label))
+    return data
+
+def min_max_normalize(data):
+    features_only = [item[0] for item in data]
+    num_features = len(features_only[0])
+    min_vals = [min(features_only[i][j] for i in range(len(features_only))) for j in range(num_features)]
+    max_vals = [max(features_only[i][j] for i in range(len(features_only))) for j in range(num_features)]
+
+    normalized_data = []
+    for features, label in data:
+        normalized_features = []
+        for j in range(num_features):
+            if (max_vals[j] - min_vals[j]) != 0:
+                normalized_value = (features[j] - min_vals[j]) / (max_vals[j] - min_vals[j])
+            else:
+                normalized_value = 0
+            normalized_features.append(normalized_value)
+        normalized_data.append((normalized_features, label))
+    return normalized_data
+
+def majorvote(neighbors, is_weighted=False):
+    freq = {}
+    for features, metric_value, label, _ in neighbors: # Unpack original_d but not used in vote calculation
+        if is_weighted:
+            # If weighted, metric_value is already 1/d^2. Handle inf case.
+            weight = metric_value if metric_value != float('inf') else 1000000 # Assign a very large weight for inf
+        else:
+            # If unweighted, metric_value was 'd', but for voting, we just count as 1
+            weight = 1
+        freq[label] = freq.get(label, 0) + weight
+
+    if not freq:
+        return None, {}
+
+    max_count = max(freq.values())
+    max_classes = [cls for cls, cnt in freq.items() if cnt == max_count]
+
+    if len(max_classes) == 1:
+        predicted = max_classes[0]
+    else:
+        # Tie-breaking: choose the class of the 'nearest' neighbor.
+        # Since neighbors are sorted by the metric_value, the first one is the "best".
+        predicted = neighbors[0][2] 
+    return predicted, freq
+
+def main():
+    print("KNN Classification using Breast cancer Dataset")
+    random.seed(42)
+    # Using 'wdbc.data' as specified
+    data = load("wdbc.data")
+
+    needs_normalization = False
+    for features, _ in data:
+        if any(f > 10 for f in features):
+            needs_normalization = True
+            break
+
+    if needs_normalization:
+        print("\n--- Performing Min-Max Normalization ---")
+        data = min_max_normalize(data)
+
+    selected = random.sample(data, 15)
+    print("\n--- 15 Randomly Selected Records ---")
+    for i, (features, label) in enumerate(selected, 1):
+        print(f"{i:2}. {features} -> {label}")
+    
+    training = selected[:10]
+    testing = selected[10:]
+    
+    test_features, test_label = random.choice(testing)
+    print("\n--- Selected Test Record ---")
+    print("Features:", test_features)
+    print("Actual Class:", test_label)
+    print("\nDistance Metric:")
+    print("1. Euclidean (r = 2)")
+    print("2. Manhattan (r = 1)")
+    choice = input("Enter choice: ")
+    r = 2 if choice == "1" else 1
+    
+    # Menu for weighted/unweighted voting
+    print("\nSelect Voting Method:")
+    print("1. Unweighted Voting")
+    print("2. Weighted Voting (1/d^2)")
+    vote_choice = input("Enter choice: ")
+    is_weighted_voting = (vote_choice == "2")
+
+    distance_table = []
+    for features, label in training:
+        d = distance(features, test_features, r)
+        
+        # Store the appropriate metric in the distance_table based on voting choice
+        if is_weighted_voting:
+            # Store 1/d^2 for weighted. If d is 0, make it a very large number for sorting.
+            metric_for_table = (1 / (d ** 2)) if d != 0 else float('inf') 
+        else:
+            metric_for_table = d # Store d for unweighted
+
+        distance_table.append((features, metric_for_table, label, d)) # Always store original 'd' for potential display
+
+    # Sort the distance table based on the metric_for_table
+    # If unweighted, sort by 'd' (ascending). If weighted, sort by '1/d^2' (descending - highest weight first).
+    distance_table.sort(key=lambda x: x[1] if not is_weighted_voting else -x[1])
+
+
+    print("\n--- Distance Table ---")
+    # Display the appropriate 'Distance' based on the voting method chosen
+    distance_header = "Distance (1/d^2)" if is_weighted_voting else "Distance"
+    # Use a fixed width for the distance column
+    print(f"{'Rank':<5} | {'Training Record':<35} | {distance_header:<16} | Class")
+    print("-" * 85) # Adjusted line length
+    for i, (features, metric_val, label, original_d) in enumerate(distance_table, 1):
+        display_dist = metric_val if is_weighted_voting else original_d
+        # Format display_dist with a fixed width, handling 'inf' gracefully
+        if display_dist == float('inf'):
+            formatted_dist = "inf".ljust(16)
+        else:
+            formatted_dist = f"{display_dist:.4f}".ljust(16)
+        print(f"{i:<5} | {str(features):<35} | {formatted_dist} | {label}")
+    
+    k = int(input("\nEnter K value: "))
+    neighbors = distance_table[:k] # Select top K neighbors based on the sorted metric_for_table
+    
+    print(f"\n--- Top {k} Nearest Neighbors ---")
+    print(f"{'Rank':<5} | {distance_header:<16} | Class") # Display the appropriate 'Distance' header
+    print("-" * 45) # Adjusted line length
+    for i, (_, metric_val, label, original_d) in enumerate(neighbors, 1):
+        display_dist = metric_val if is_weighted_voting else original_d
+        # Format display_dist with a fixed width, handling 'inf' gracefully
+        if display_dist == float('inf'):
+            formatted_dist = "inf".ljust(16)
+        else:
+            formatted_dist = f"{display_dist:.4f}".ljust(16)
+        print(f"{i:<5} | {formatted_dist} | {label}")
+    
+    predicted_class, vote_count = majorvote(neighbors, is_weighted=is_weighted_voting) # Pass is_weighted to majorvote
+    
+    print("\nClass Frequency:", vote_count)
+
+    if predicted_class is None:
+        print("No neighbors selected, cannot predict class.")
+    else:
+        # Check for tie in majorvote results
+        max_votes = max(vote_count.values())
+        tied_classes = [cls for cls, votes in vote_count.items() if votes == max_votes]
+        if len(tied_classes) > 1:
+            print("Tie detected  Selected class of nearest neighbor")
+
+    print("\nFinal Predicted Class:", predicted_class)
+    print("Actual Class:", test_label)
+
+if __name__ == "__main__":
+    main()
+
+
+[23bcs086@mepcolinux exercise3]$python3 knn4.py
+KNN Classification using Breast cancer Dataset
+
+--- Performing Min-Max Normalization ---
+
+--- 15 Randomly Selected Records ---
+ 1. [0.08258791234795784, 0.206966520121745, 0.08326998825236682, 0.03707317073170732] -> B
+ 2. [0.4808083676463629, 0.22624281366249568, 0.498997995991984, 0.3262778366914104] -> M
+ 3. [0.22523545837474565, 0.14575583361515043, 0.2104208416833667, 0.12038176033934253] -> B
+ 4. [0.6606559704671306, 0.4683801149814, 0.6572455255338263, 0.5177094379639449] -> M
+ 5. [0.26688437692271283, 0.4822455191072032, 0.25955358993849764, 0.14969247083775183] -> B
+ 6. [0.21056368024989353, 0.25701724721001007, 0.2064128256513026, 0.10795334040296925] -> B
+ 7. [0.16607506271001943, 0.3239770037199864, 0.16322299771957705, 0.08169671261930012] -> B
+ 8. [0.3601211604903214, 0.4386202231991883, 0.36348559187340196, 0.21785790031813362] -> B
+ 9. [0.3624875763169105, 0.1870138654041258, 0.35920116094257476, 0.21565217391304348] -> B
+10. [0.6246864499029771, 0.332431518430842, 0.6220026259415383, 0.4693531283138918] -> M
+11. [0.47512896966254914, 0.48258369969563747, 0.4768848040909404, 0.320593849416755] -> M
+12. [0.5513275592787165, 0.5207981061887047, 0.5598092737198535, 0.40063626723223755] -> M
+13. [0.6284727152255196, 0.4504565437943862, 0.6123281044848318, 0.4752916224814422] -> M
+14. [0.41502200766718733, 0.3564423402096719, 0.4063990049063644, 0.26205726405090135] -> M
+15. [0.34260968337356246, 0.6134595874196821, 0.3369497615921498, 0.20377518557794272] -> B
+
+--- Selected Test Record ---
+Features: [0.34260968337356246, 0.6134595874196821, 0.3369497615921498, 0.20377518557794272]
+Actual Class: B
+
+Distance Metric:
+1. Euclidean (r = 2)
+2. Manhattan (r = 1)
+Enter choice: 1
+
+Select Voting Method:
+1. Unweighted Voting
+2. Weighted Voting (1/d^2)
+Enter choice: 1
+
+--- Distance Table ---
+Rank  | Training Record                     | Distance         | Class
+-------------------------------------------------------------------------------------
+1     | [0.3601211604903214, 0.4386202231991883, 0.36348559187340196, 0.21785790031813362] | 0.1783           | B
+2     | [0.26688437692271283, 0.4822455191072032, 0.25955358993849764, 0.14969247083775183] | 0.1785           | B
+3     | [0.16607506271001943, 0.3239770037199864, 0.16322299771957705, 0.08169671261930012] | 0.4001           | B
+4     | [0.21056368024989353, 0.25701724721001007, 0.2064128256513026, 0.10795334040296925] | 0.4132           | B
+5     | [0.3624875763169105, 0.1870138654041258, 0.35920116094257476, 0.21565217391304348] | 0.4277           | B
+6     | [0.4808083676463629, 0.22624281366249568, 0.498997995991984, 0.3262778366914104] | 0.4586           | M
+7     | [0.22523545837474565, 0.14575583361515043, 0.2104208416833667, 0.12038176033934253] | 0.5055           | B
+8     | [0.6246864499029771, 0.332431518430842, 0.6220026259415383, 0.4693531283138918] | 0.5571           | M
+9     | [0.6606559704671306, 0.4683801149814, 0.6572455255338263, 0.5177094379639449] | 0.5686           | M
+10    | [0.08258791234795784, 0.206966520121745, 0.08326998825236682, 0.03707317073170732] | 0.5701           | B
+
+Enter K value: 5
+
+--- Top 5 Nearest Neighbors ---
+Rank  | Distance         | Class
+---------------------------------------------
+1     | 0.1783           | B
+2     | 0.1785           | B
+3     | 0.4001           | B
+4     | 0.4132           | B
+5     | 0.4277           | B
+
+Class Frequency: {'B': 5}
+
+Final Predicted Class: B
+Actual Class: B
+[23bcs086@mepcolinux exercise3]$python3 knn4.py
+KNN Classification using Breast cancer Dataset
+
+--- Performing Min-Max Normalization ---
+
+--- 15 Randomly Selected Records ---
+ 1. [0.08258791234795784, 0.206966520121745, 0.08326998825236682, 0.03707317073170732] -> B
+ 2. [0.4808083676463629, 0.22624281366249568, 0.498997995991984, 0.3262778366914104] -> M
+ 3. [0.22523545837474565, 0.14575583361515043, 0.2104208416833667, 0.12038176033934253] -> B
+ 4. [0.6606559704671306, 0.4683801149814, 0.6572455255338263, 0.5177094379639449] -> M
+ 5. [0.26688437692271283, 0.4822455191072032, 0.25955358993849764, 0.14969247083775183] -> B
+ 6. [0.21056368024989353, 0.25701724721001007, 0.2064128256513026, 0.10795334040296925] -> B
+ 7. [0.16607506271001943, 0.3239770037199864, 0.16322299771957705, 0.08169671261930012] -> B
+ 8. [0.3601211604903214, 0.4386202231991883, 0.36348559187340196, 0.21785790031813362] -> B
+ 9. [0.3624875763169105, 0.1870138654041258, 0.35920116094257476, 0.21565217391304348] -> B
+10. [0.6246864499029771, 0.332431518430842, 0.6220026259415383, 0.4693531283138918] -> M
+11. [0.47512896966254914, 0.48258369969563747, 0.4768848040909404, 0.320593849416755] -> M
+12. [0.5513275592787165, 0.5207981061887047, 0.5598092737198535, 0.40063626723223755] -> M
+13. [0.6284727152255196, 0.4504565437943862, 0.6123281044848318, 0.4752916224814422] -> M
+14. [0.41502200766718733, 0.3564423402096719, 0.4063990049063644, 0.26205726405090135] -> M
+15. [0.34260968337356246, 0.6134595874196821, 0.3369497615921498, 0.20377518557794272] -> B
+
+--- Selected Test Record ---
+Features: [0.34260968337356246, 0.6134595874196821, 0.3369497615921498, 0.20377518557794272]
+Actual Class: B
+
+Distance Metric:
+1. Euclidean (r = 2)
+2. Manhattan (r = 1)
+Enter choice: 2
+
+Select Voting Method:
+1. Unweighted Voting
+2. Weighted Voting (1/d^2)
+Enter choice: 2
+
+--- Distance Table ---
+Rank  | Training Record                     | Distance (1/d^2) | Class
+-------------------------------------------------------------------------------------
+1     | [0.3601211604903214, 0.4386202231991883, 0.36348559187340196, 0.21785790031813362] | 18.4248          | B
+2     | [0.26688437692271283, 0.4822455191072032, 0.25955358993849764, 0.14969247083775183] | 8.7316           | B
+3     | [0.3624875763169105, 0.1870138654041258, 0.35920116094257476, 0.21565217391304348] | 4.3321           | B
+4     | [0.21056368024989353, 0.25701724721001007, 0.2064128256513026, 0.10795334040296925] | 1.9569           | B
+5     | [0.16607506271001943, 0.3239770037199864, 0.16322299771957705, 0.08169671261930012] | 1.7230           | B
+6     | [0.22523545837474565, 0.14575583361515043, 0.2104208416833667, 0.12038176033934253] | 1.5822           | B
+7     | [0.4808083676463629, 0.22624281366249568, 0.498997995991984, 0.3262778366914104] | 1.5243           | M
+8     | [0.08258791234795784, 0.206966520121745, 0.08326998825236682, 0.03707317073170732] | 0.8465           | B
+9     | [0.6606559704671306, 0.4683801149814, 0.6572455255338263, 0.5177094379639449] | 0.8304           | M
+10    | [0.6246864499029771, 0.332431518430842, 0.6220026259415383, 0.4693531283138918] | 0.8062           | M
+
+Enter K value: 5
+
+--- Top 5 Nearest Neighbors ---
+Rank  | Distance (1/d^2) | Class
+---------------------------------------------
+1     | 18.4248          | B
+2     | 8.7316           | B
+3     | 4.3321           | B
+4     | 1.9569           | B
+5     | 1.7230           | B
+
+Class Frequency: {'B': 35.16841691450208}
+
+Final Predicted Class: B
+Actual Class: B
+[23bcs086@mepcolinux exercise3]$exit
+exit
+
+Script done on Tue Feb 17 09:52:25 2026

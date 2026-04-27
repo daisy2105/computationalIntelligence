@@ -1,0 +1,5 @@
+iconv -f utf-8 -t utf-8//IGNORE your.prn -o clean.prn
+
+LC_ALL=C sed 's/[^[:print:]\t]//g' your.prn > clean.prn
+
+

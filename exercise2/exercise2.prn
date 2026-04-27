@@ -1,0 +1,706 @@
+Script started on Tue Jan 27 12:26:18 2026
+[23bcs086@mepcolinux exercise2]$cat final.py
+class Graph:
+    def __init__(self):
+        self.nodes = []
+        self.edges = []   # (from, to, cost)
+
+    def addNode(self, node):
+        if node not in self.nodes:
+            self.nodes.append(node)
+            print("Node added")
+        else:
+            print("Node already exists")
+
+    def deleteNode(self, node):
+        if node in self.nodes:
+            self.nodes.remove(node)
+            self.edges = [e for e in self.edges if e[0] != node and e[1] != node]
+            print("Node deleted")
+        else:
+            print("Node not found")
+
+    def addEdge(self, u, v, cost):
+        if u in self.nodes and v in self.nodes:
+            self.edges.append((u, v, cost))
+            print("Edge added")
+        else:
+            print("Invalid nodes")
+
+    def deleteEdge(self, u, v):
+        new_edges = []
+        found = False
+        for e in self.edges:
+            if e[0] == u and e[1] == v:
+                found = True
+            else:
+                new_edges.append(e)
+        self.edges = new_edges
+        print("Edge deleted" if found else "Edge not found")
+
+    def display_adjlist(self):
+        print("\nAdjacency List:")
+        for n in self.nodes:
+            print(n, "->", end=" ")
+            for e in self.edges:
+                if e[0] == n:
+                    print(f"{e[1]}(cost={e[2]})", end=" ")
+            print()
+
+    def A_Star(self, start, goal):
+        heuristic = {}
+        print("\nEnter heuristic values:")
+        for node in self.nodes:
+            while True:
+                try:
+                    heuristic[node] = int(input(f"h({node}) = "))
+                    break
+                except ValueError:
+                    print("Please enter a valid integer.")
+        open_list = [[start, [start], 0]]          # [node, path, g]
+        open_dict = {start: open_list[0]}
+        closed_list = set()
+        g_score = {start: 0}
+        step = 0
+
+        while open_list:
+            step += 1
+            print(f"\nStep : {step}")
+            open_list.sort(key=lambda x: x[2] + heuristic[x[0]])
+            print("Open List: ")
+            for item in open_list:
+                f_score = item[2] + heuristic[item[0]]
+                print(f"Node: {item[0]}, Path: {item[1]}, g: {item[2]}, h: {heuristic[item[0]]}, f: {f_score}")
+
+            print(f"Closed List : {closed_list}")
+
+            current, path, g = open_list.pop(0)
+            del open_dict[current]
+
+            if current == goal:
+                print("\nGoal reached!")
+                print("Optimal Path:", path)
+                print("Optimal Cost:", g)
+                return
+
+            closed_list.add(current)
+
+            for e in self.edges:
+                if e[0] == current:
+                    neighbor = e[1]
+                    cost = e[2]
+                    tentative_g = g + cost
+
+                    if neighbor in closed_list:
+                        continue
+
+                    if neighbor not in g_score or tentative_g < g_score[neighbor]:
+                        g_score[neighbor] = tentative_g
+                        new_path = path + [neighbor]
+
+                        if neighbor in open_dict:
+                            for item in open_list:
+                                if item[0] == neighbor:
+                                    item[1] = new_path
+                                    item[2] = tentative_g
+                                    break
+                        else:
+                            entry = [neighbor, new_path, tentative_g]
+                            open_list.append(entry)
+                            open_dict[neighbor] = entry
+
+        print("No path found")
+
+
+if __name__ == "__main__":
+    g = Graph()
+    while True:
+        print("\n1. addNode")
+        print("2. deleteNode")
+        print("3. addEdge")
+        print("4. deleteEdge")
+        print("5. display_adjlist")
+        print("6. A*Search")
+        print("7. Exit")
+
+        try:
+            choice = int(input("Enter your choice: "))
+        except ValueError:
+            print("Please enter a valid integer choice.")
+            continue
+
+        if choice == 1:
+            node = input("Enter node: ")
+            g.addNode(node)
+
+        elif choice == 2:
+            node = input("Enter node to delete: ")
+            g.deleteNode(node)
+
+        elif choice == 3:
+            u = input("From node: ")
+            v = input("To node: ")
+            try:
+                cost = int(input("Cost: "))
+            except ValueError:
+                print("Cost must be an integer.")
+                continue
+            g.addEdge(u, v, cost)
+
+        elif choice == 4:
+            u = input("From node: ")
+            v = input("To node: ")
+            g.deleteEdge(u, v)
+
+        elif choice == 5:
+            g.display_adjlist()
+
+        elif choice == 6:
+            start = input("Enter the start node: ")
+            goal = input("Enter the goal node: ")
+            if start not in g.nodes or goal not in g.nodes:
+                print("Start and/or goal node not present.")
+            else:
+                g.A_Star(start, goal)
+
+        elif choice == 7:
+            print("Exiting program")
+            break
+
+        else:
+            print("Invalid choice")
+
+
+
+[23bcs086@mepcolinux exercise2]$cat output.txt
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 1
+Enter node: arad
+Node added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 1
+Enter node: zerind
+Node added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 1
+Enter node: oradea
+Node added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 1
+Enter node: timisoara
+Node added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 1
+Enter node: sibiu
+Node added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 1
+Enter node: fagaras
+Node added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 1
+Enter node: rimnicu vilcea
+Node added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 1
+Enter node: lugoj
+Node added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 1
+Enter node: mehadia
+Node added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 1
+Enter node: craiova
+Node added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 1
+Enter node: pitesti
+Node added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 1
+Enter node: bucharest
+Node added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 5
+
+Adjacency List:
+arad ->
+zerind ->
+oradea ->
+timisoara ->
+sibiu ->
+fagaras ->
+rimnicu vilcea ->
+lugoj ->
+mehadia ->
+craiova ->
+pitesti ->
+bucharest ->
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 3
+From node: arad
+To node: zerind
+Cost: 75
+Edge added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 3
+From node: zerind
+To node: oradea
+Cost: 71
+Edge added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 3
+From node: oradea
+To node: sibiu
+Cost: 151
+Edge added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 3
+From node: arad
+To node: sibiu
+Cost: 140
+Edge added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 3
+From node: sibiu
+To node: fagaras
+Cost: 90
+Edge added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 3
+From node: sibiu
+To node: rimnicu vilcea
+Cost: 80
+Edge added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 3
+From node: arad
+To node: timisoara
+Cost: 118
+Edge added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 3
+From node: timisoara
+To node: lugoj
+Cost: 111
+Edge added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 3
+From node: lugoj
+To node: mehadia
+Cost: 70
+Edge added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 3
+From node: mehadia
+To node: craiova
+Cost: 120
+Edge added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 3
+From node: rimnicu vilcea
+To node: craiova
+Cost: 146
+Invalid nodes
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 3
+From node: rimnicu vilcea
+To node: pitesti
+Cost: 97
+Edge added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 5
+
+Adjacency List:
+arad -> zerind(cost=75) sibiu(cost=140) timisoara(cost=118)
+zerind -> oradea(cost=71)
+oradea -> sibiu(cost=151)
+timisoara -> lugoj(cost=111)
+sibiu -> fagaras(cost=90) rimnicu vilcea(cost=80)
+fagaras ->
+rimnicu vilcea -> pitesti(cost=97)
+lugoj -> mehadia(cost=70)
+mehadia -> craiova(cost=120)
+craiova ->
+pitesti ->
+bucharest ->
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 3
+From node: fagaras
+To node: bucharest
+Cost: 211
+Edge added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 3
+From node: rimnicu vilcea
+To node: craiova
+Cost: 146
+Edge added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 5
+
+Adjacency List:
+arad -> zerind(cost=75) sibiu(cost=140) timisoara(cost=118)
+zerind -> oradea(cost=71)
+oradea -> sibiu(cost=151)
+timisoara -> lugoj(cost=111)
+sibiu -> fagaras(cost=90) rimnicu vilcea(cost=80)
+fagaras -> bucharest(cost=211)
+rimnicu vilcea -> pitesti(cost=97) craiova(cost=146)
+lugoj -> mehadia(cost=70)
+mehadia -> craiova(cost=120)
+craiova ->
+pitesti ->
+bucharest ->
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 3
+From node: craiova
+To node: pitesti
+Cost: 128
+Edge added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 3
+From node: pitesti
+To node: bucharest
+Cost: 101
+Edge added
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 5
+
+Adjacency List:
+arad -> zerind(cost=75) sibiu(cost=140) timisoara(cost=118)
+zerind -> oradea(cost=71)
+oradea -> sibiu(cost=151)
+timisoara -> lugoj(cost=111)
+sibiu -> fagaras(cost=90) rimnicu vilcea(cost=80)
+fagaras -> bucharest(cost=211)
+rimnicu vilcea -> pitesti(cost=97) craiova(cost=146)
+lugoj -> mehadia(cost=70)
+mehadia -> craiova(cost=120)
+craiova -> pitesti(cost=128)
+pitesti -> bucharest(cost=101)
+bucharest ->
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 6
+Enter the start node: arad
+Enter the goal node: bucharest
+
+Enter heuristic values:
+h(arad) = 366
+h(zerind) = 374
+h(oradea) = 380
+h(timisoara) = 329
+h(sibiu) = 253
+h(fagaras) = 178
+h(rimnicu vilcea) = 193
+h(lugoj) = 244
+h(mehadia) = 241
+h(craiova) = 160
+h(pitesti) = 98
+h(bucharest) = 0
+
+Step : 1
+Open List:
+Node: arad, Path: ['arad'], g: 0, h: 366, f: 366
+Closed List : set()
+
+Step : 2
+Open List:
+Node: sibiu, Path: ['arad', 'sibiu'], g: 140, h: 253, f: 393
+Node: timisoara, Path: ['arad', 'timisoara'], g: 118, h: 329, f: 447
+Node: zerind, Path: ['arad', 'zerind'], g: 75, h: 374, f: 449
+Closed List : {'arad'}
+
+Step : 3
+Open List:
+Node: fagaras, Path: ['arad', 'sibiu', 'fagaras'], g: 230, h: 178, f: 408
+Node: rimnicu vilcea, Path: ['arad', 'sibiu', 'rimnicu vilcea'], g: 220, h: 193, f: 413
+Node: timisoara, Path: ['arad', 'timisoara'], g: 118, h: 329, f: 447
+Node: zerind, Path: ['arad', 'zerind'], g: 75, h: 374, f: 449
+Closed List : {'sibiu', 'arad'}
+
+Step : 4
+Open List:
+Node: rimnicu vilcea, Path: ['arad', 'sibiu', 'rimnicu vilcea'], g: 220, h: 193, f: 413
+Node: bucharest, Path: ['arad', 'sibiu', 'fagaras', 'bucharest'], g: 441, h: 0, f: 441
+Node: timisoara, Path: ['arad', 'timisoara'], g: 118, h: 329, f: 447
+Node: zerind, Path: ['arad', 'zerind'], g: 75, h: 374, f: 449
+Closed List : {'sibiu', 'arad', 'fagaras'}
+
+Step : 5
+Open List:
+Node: pitesti, Path: ['arad', 'sibiu', 'rimnicu vilcea', 'pitesti'], g: 317, h: 98, f: 415
+Node: bucharest, Path: ['arad', 'sibiu', 'fagaras', 'bucharest'], g: 441, h: 0, f: 441
+Node: timisoara, Path: ['arad', 'timisoara'], g: 118, h: 329, f: 447
+Node: zerind, Path: ['arad', 'zerind'], g: 75, h: 374, f: 449
+Node: craiova, Path: ['arad', 'sibiu', 'rimnicu vilcea', 'craiova'], g: 366, h: 160, f: 526
+Closed List : {'sibiu', 'arad', 'rimnicu vilcea', 'fagaras'}
+
+Step : 6
+Open List:
+Node: bucharest, Path: ['arad', 'sibiu', 'rimnicu vilcea', 'pitesti', 'bucharest'], g: 418, h: 0, f: 418
+Node: timisoara, Path: ['arad', 'timisoara'], g: 118, h: 329, f: 447
+Node: zerind, Path: ['arad', 'zerind'], g: 75, h: 374, f: 449
+Node: craiova, Path: ['arad', 'sibiu', 'rimnicu vilcea', 'craiova'], g: 366, h: 160, f: 526
+Closed List : {'sibiu', 'rimnicu vilcea', 'arad', 'fagaras', 'pitesti'}
+
+Goal reached!
+Optimal Path: ['arad', 'sibiu', 'rimnicu vilcea', 'pitesti', 'bucharest']
+Optimal Cost: 418
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice:
+Please enter a valid integer choice.
+
+1. addNode
+2. deleteNode
+3. addEdge
+4. deleteEdge
+5. display_adjlist
+6. A*Search
+7. Exit
+Enter your choice: 7
+Exiting program
+
+
+[23bcs086@mepcolinux exercise2]$exit
+exit
+
+Script done on Tue Jan 27 12:26:47 2026

@@ -1,0 +1,247 @@
+Script started on Sat Apr 25 15:26:21 2026
+[23bcs086@mepcolinux exercise9]$cat coin.py
+import itertools
+n = int(input("\nEnter the number of tosses: "))
+
+sample_space = [''.join(toss) for toss in itertools.product('HT', repeat=n)]
+total_outcomes = len(sample_space)
+
+one_head_one_tail = [i for i in sample_space if i.count("H") == 1 and i.count("T") == 1]
+prob_1H1T = len(one_head_one_tail) / total_outcomes
+
+atleast_one_head = [i for i in sample_space if i.count("T") == 2]
+prob_atleast_1H = len(atleast_one_head) / total_outcomes
+
+atleast_one_tail = [i for i in sample_space if "T" in i]
+prob_atleast_1T = len(atleast_one_tail) / total_outcomes
+
+atmost_one_tail = [i for i in sample_space if i.count("T") <= 1]
+prob_atmost_1T = len(atmost_one_tail) / total_outcomes
+
+print(f"Sample Space ({total_outcomes} outcomes):", sample_space)
+print(f"\nExactly 1 Head : {one_head_one_tail}")
+print(f"Probability: {prob_1H1T}")
+print(f"\nAt least 2 Tail: {atleast_one_head}")
+print(f"Probability: {prob_atleast_1H}")
+print(f"\nAt least 1 Tail: {atleast_one_tail}")
+print(f"Probability: {prob_atleast_1T}")
+print(f"\nAt most 1 Tail: {atmost_one_tail}")
+print(f"Probability: {prob_atmost_1T}")
+print()
+
+[23bcs086@mepcolinux exercise9]$python3 coin.py
+
+Enter the number of tosses: 1
+Sample Space (2 outcomes): ['H', 'T']
+
+Exactly 1 Head : []
+Probability: 0.0
+
+At least 2 Tail: []
+Probability: 0.0
+
+At least 1 Tail: ['T']
+Probability: 0.5
+
+At most 1 Tail: ['H', 'T']
+Probability: 1.0
+
+[23bcs086@mepcolinux exercise9]$cat joint.py
+from itertools import product
+
+def parse_condition(cond):
+    cond = cond.strip().lower()
+    if cond.startswith('~'):
+        return cond[1:], False
+    return cond, True
+
+def check_conditions(row, conditions, logic='and'):
+    if not conditions:
+        return True
+
+    results = []
+    for var, val in conditions:
+        if var in row:
+            results.append(row[var] == val)
+
+    if logic == 'or':
+        return any(results)
+    return all(results)
+
+def compute_probability(kb, query_info, given_info=None):
+    numerator = 0
+    denominator = 0
+
+    q_conds, q_logic = query_info
+
+    if given_info is None:
+        for row in kb:
+            if check_conditions(row, q_conds, q_logic):
+                numerator += row['prob']
+        return round(numerator, 4)
+    else:
+        g_conds, g_logic = given_info
+        for row in kb:
+            if check_conditions(row, g_conds, g_logic):
+                denominator += row['prob']
+                if check_conditions(row, q_conds, q_logic):
+                    numerator += row['prob']
+        return round(numerator / denominator, 4) if denominator != 0 else 0
+
+def parse_query_part(part):
+    if 'v' in part:
+        conds = [parse_condition(c) for c in part.split('v') if c.strip()]
+        return (conds, 'or')
+    else:
+        # Standardize AND logic for ^ or comma
+        part = part.replace('^', ',')
+        conds = [parse_condition(c) for c in part.split(',') if c.strip()]
+        return (conds, 'and')
+
+def main():
+    num_vars = int(input("\nEnter number of variables: ").strip())
+    variables = []
+    print("Enter variable names:")
+    for _ in range(num_vars):
+        variables.append(input().strip().lower())
+
+    combinations = list(product([True, False], repeat=num_vars))
+    kb = []
+
+    print("\nEnter values for each combination:")
+    for comb in combinations:
+        row = {}
+        display_parts = []
+        for i, val in enumerate(comb):
+            row[variables[i]] = val
+            display_parts.append(f"{variables[i]}={'T' if val else 'F'}")
+        print(", ".join(display_parts))
+        row['prob'] = float(input("Value: "))
+        kb.append(row)
+
+    print("\nKnowledge Base Table:")
+    header = " | ".join([v.upper() for v in variables]) + " | Value"
+    print(header)
+    print("-" * len(header))
+    for row in kb:
+        vals = " | ".join(["T" if row[v] else "F" for v in variables])
+        print(f"{vals} | {row['prob']}")
+
+    while True:
+        raw_query = input("\nEnter query or '0' to exit: ").strip().lower()
+        if raw_query == '0': break
+        try:
+            clean = raw_query.replace("p(", "").replace(")", "")
+            if '|' in clean:
+                left, right = clean.split('|')
+                result = compute_probability(kb, parse_query_part(left), parse_query_part(right))
+            else:
+                result = compute_probability(kb, parse_query_part(clean))
+            print(f"Result = {result}")
+        except Exception as e:
+            print(f"Error: {e}")
+    print()
+
+if __name__ == "__main__":
+    main()
+
+
+[23bcs086@mepcolinux exercise9]$python3 joint.py
+
+Enter number of variables: 3
+Enter variable names:
+traffic
+sunny
+late
+
+Enter values for each combination:
+traffic=T, sunny=T, late=T
+Value: 0.10
+traffic=T, sunny=T, late=F
+Value: 0.15
+traffic=T, sunny=F, late=T
+Value: 0.20
+traffic=T, sunny=F, late=F
+Value: 0.10
+traffic=F, sunny=T, late=T
+Value: 0.05
+traffic=F, sunny=T, late=F
+Value: 0.20
+traffic=F, sunny=F, late=T
+Value: 0.08
+traffic=F, sunny=F, late=F
+Value: 0.12
+
+Knowledge Base Table:
+TRAFFIC | SUNNY | LATE | Value
+------------------------------
+T | T | T | 0.1
+T | T | F | 0.15
+T | F | T | 0.2
+T | F | F | 0.1
+F | T | T | 0.05
+F | T | F | 0.2
+F | F | T | 0.08
+F | F | F | 0.12
+
+Enter query or '0' to exit: P(~sunny^traffic)
+Result = 0.3
+
+Enter query or '0' to exit: p^H
+Result = 1.0
+
+Enter query or '0' to exit: P(late|~sunny)
+Result = 0.56
+
+Enter query or '0' to exit: P(~sunny V late)
+Result = 0.65
+
+Enter query or '0' to exit: P(sunny^traffic^late)
+Result = 0.1
+
+Enter query or '0' to exit: P(late|sunny^t^H
+Result = 0.3
+
+Enter query or '0' to exit: p(^H^H^Z
+[1]+  Stopped                 python3 joint.py
+[23bcs086@mepcolinux exercise9]$cat bayes.py
+A = input("\nEnter eventA : ")
+B = input("ENter eventB : ")
+pA = float(input(f"P({A}) = "))
+pB = float(input(f"P({B}) = "))
+pBgA = float(input(f"P({B}|{A}) = "))
+
+pAgB = (pBgA * pA) / pB
+print("\nUsing Bayes Rule : ")
+print(f"P({A}|{B}) = {pAgB:.2f}\n")
+
+
+[23bcs086@mepcolinux exercise9]$python3 bayes.py
+
+Enter eventA : disease
+ENter eventB : positive
+P(disease) = 0.01
+P(positive) = 0.1
+P(positive|disease) = 0.9
+
+Using Bayes Rule : 
+P(disease|positive) = 0.09
+
+[23bcs086@mepcolinux exercise9]$python3 bayes.py
+
+Enter eventA : rain
+ENter eventB : cloudy
+P(rain) = 0.2
+P(cloudy) = 0.5
+P(cloudy|rain) = 0.9
+
+Using Bayes Rule : 
+P(rain|cloudy) = 0.36
+
+[23bcs086@mepcolinux exercise9]$exit
+exit
+There are stopped jobs.
+[23bcs086@mepcolinux exercise9]$exit
+exit
+
+Script done on Sat Apr 25 15:30:15 2026
